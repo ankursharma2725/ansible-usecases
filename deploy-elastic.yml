@@ -1,0 +1,46 @@
+- name: elastic
+  hosts: "localhost"
+  gather_facts: true
+  pre_tasks:
+  - name: create elastic network
+    shell: "docker network create elastic || true"
+  - name: generate Certifcates
+    include_tasks: tasks/generate_es_certs.yml
+  - name: generate Keystore
+    include_tasks: tasks/generate_es_keystore.yml
+  vars_files:
+    - "vaults/default.yml"
+    - "roles/elastic-docker/vars/main.yml"
+  vars:
+    sc_docker_network: "elastic"
+    sc_envs:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "ELASTIC_PASSWORD={{ elastic.password }}" 
+    elastic_role:
+      id: "{{ project.name }}"
+      uid: "{{ project.uid }}"
+      gid: "{{ project.gid }}"
+      service_name: "{{ project.name }}-elastic"
+      image: "{{ elastic.image_name }}:{{ elastic.image_tag }}"
+      yml_template: "elasticsearch.yml"
+      conf_dir: "{{ project.base_path }}/elasticsearch/config"
+      data_dir: "{{ project.base_path }}/elasticsearch/data"
+      log_dir: "{{ project.base_path }}/elasticsearch/log"
+      port: "9200"
+      tport: "9300"
+    
+    elastic_config:
+      name: "{{ project.name }}-elastic"
+      cluster_name: "{{ project.name }}"
+      host: "{{ project.name }}-elastic"
+      node_name: "{{ project.name }}-elastic"
+      sc_port_bindings: '9200:9200'
+      sc_port_bindings2: '9300:9300'
+      conf_dir: "{{ project.base_path }}/elasticsearch/config"
+      data_dir: "{{ project.base_path }}/elasticsearch/data"
+      log_dir: "{{ project.base_path }}/elasticsearch/log"
+  
+      
+    
+  roles:
+    - elastic-docker

@@ -1,0 +1,20 @@
+cluster.name: "{{ elastic_config.cluster_name }}"
+node.name: "{{ elastic_config.node_name }}"
+network.host: "{{ elastic_config.node_name }}"
+discovery.type: single-node
+bootstrap.memory_lock: true
+script.painless.regex.enabled: true
+xpack:
+  security.enabled: true
+  security.transport.ssl.enabled: true
+  security.http.ssl.enabled: true
+  security.transport.ssl.verification_mode: none
+  security.transport.ssl.keystore.path: /usr/share/elasticsearch/config/{{ elastic.cert }}
+  security.transport.ssl.truststore.path: /usr/share/elasticsearch/config/{{ elastic.cert }}
+  security.http.ssl.verification_mode: none
+  security.transport.ssl.client_authentication: none
+  security.http.ssl.keystore.path: /usr/share/elasticsearch/config/{{ elastic.cert }}
+  security.http.ssl.truststore.path: /usr/share/elasticsearch/config/{{ elastic.cert }}
+  security.authc.api_key.enabled: true
+  monitoring.templates.enabled: true
+  monitoring.collection.enabled: true

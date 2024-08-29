@@ -1,0 +1,20 @@
+---
+# handlers file for elastic-docker
+- name: restart elastic
+  systemd:
+    name: '{{ elastic_role.service_name }}.service'
+    state: restarted
+  notify: get container ip
+
+- name: get container ip
+  shell: "docker inspect -f  {% raw %} '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'  {% endraw %} elastic-{{ elastic_role.id }}"
+  register: container_ip
+  notify: wait until elastic is started
+
+- name: wait until elastic is started
+  wait_for:
+    host: '{{ container_ip.stdout }}'
+    port: '9200'
+    state: started
+    delay: 5
+    timeout: 2100   #2100s=35 Minutes

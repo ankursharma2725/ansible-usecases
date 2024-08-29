@@ -1,0 +1,10 @@
+---
+# defaults file for std_container
+# The maximum amount of memory the container can use: e.g. 1g 256m
+sc_memory_limit: ''
+sc_restart_on_failure: false
+sc_service_template: "sc.service"
+
+# following variables are used when 'sc_restart_on_failure: true'
+sc_restart_count: 3
+sc_restart_seconds: 30

@@ -1,0 +1,98 @@
+---
+# tasks file for elastic-docker
+
+- name: ensure config directory is present
+  file:
+    path: "{{ elastic_role.conf_dir }}"
+    state: directory
+    owner: "{{ elastic_role.uid }}"
+    group: "{{ elastic_role.gid }}"
+    mode: 0750
+
+- name: ensure data directory is present
+  file:
+    path: "{{ elastic_role.data_dir }}"
+    state: directory
+    owner: "{{ elastic_role.uid }}"
+    group: "{{ elastic_role.gid }}"
+    mode: 0750
+
+- name: ensure log directory is present
+  file:
+    path: "{{ elastic_role.log_dir }}"
+    state: directory
+    owner: "{{ elastic_role.uid }}"
+    group: "{{ elastic_role.gid }}"
+    mode: 0750    
+
+- name: template elastic_role.yml
+  template:
+    src: '{{ elastic_role.yml_template }}'
+    dest: '{{ elastic_role.conf_dir }}/elasticsearch.yml'
+    owner: "{{ elastic_role.uid }}"
+    group: "{{ elastic_role.gid }}"
+    mode: 0750 
+    force: yes
+
+- name: Copy jvm.options
+  copy:
+    src: 'roles/elastic-docker/templates/jvm.options'
+    dest: '{{ elastic_role.conf_dir }}/jvm.options'
+    owner: "{{ elastic_role.uid }}"
+    group: "{{ elastic_role.gid }}"
+    mode: 0775
+    remote_src: yes 
+    force:  yes
+
+- name: Copy log4j2.properties
+  copy:
+    src: 'roles/elastic-docker/templates/log4j2.properties'
+    dest: '{{ elastic_role.conf_dir }}/log4j2.properties'
+    owner: "{{ elastic_role.uid }}"
+    group: "{{ elastic_role.gid }}"
+    mode: 0775
+    remote_src: yes 
+    force: yes
+
+- name: template log4j2.file.properties
+  copy:
+    src: 'roles/elastic-docker/templates/log4j2.file.properties'
+    dest: '{{ elastic_role.conf_dir }}/log4j2.file.properties'
+    owner: "{{ elastic_role.uid }}"
+    group: "{{ elastic_role.gid }}"
+    mode: 0775
+    remote_src: yes 
+    force: yes
+
+- name: "create and start {{ elastic_role.service_name }} service"
+  include_role:
+    name: std_container
+  vars:
+    sc_name: "{{ elastic_role.service_name }}"
+    sc_image: "{{ elastic_role.image }}"
+    sc_vols:
+      - "{{ elastic_role.conf_dir }}:/usr/share/elasticsearch/config/"
+      - "{{ elastic_role.data_dir }}:/usr/share/elasticsearch/data/"
+      - "{{ elastic_role.log_dir }}:/usr/share/elasticsearch/log/"
+    sc_labels: "{{ elastic_role.labels|default([]) }}"
+    sc_port_bindings:
+      - '9200:9200'
+
+- name: restart after elastic_role.yml has changed
+  systemd:
+    state: restarted
+    name: "{{ elastic_role.service_name }}"
+    scope: "user"
+
+- name: "wait for Cluster to get ready"
+  uri:
+    url: "{{ elastic.host }}/_cluster/health?pretty"
+    method: GET
+    status_code: [ 200 ]
+    user: '{{ elastic.user }}'
+    password: '{{ elastic.password }}'
+    validate_certs: false
+  register: result
+  until: result.status == 200
+  retries: 10
+  delay: 10

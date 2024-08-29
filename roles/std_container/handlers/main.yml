@@ -1,0 +1,7 @@
+---
+# handlers file for std_container
+- name: restart sc
+  systemd:
+    name: '{{ sc_name }}.service'
+    state: restarted
+    scope: "user"

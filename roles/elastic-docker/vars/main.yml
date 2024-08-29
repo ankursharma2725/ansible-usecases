@@ -1,0 +1,8 @@
+# ---
+# # vars file for elastic-docker
+# elastic_conf:
+#   cluster_name: "test-cluster"
+#   cluster_initial_master_nodes: [ "elasticsearch" ]
+#   node_name: "elasticsearch"
+#   node_master: true
+#   node_data: false

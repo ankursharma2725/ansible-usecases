@@ -1,0 +1,9 @@
+[all:vars]
+ansible_user=main
+ansible_become=true
+
+[local]
+localhost
+
+[test]
+192.168.1.75

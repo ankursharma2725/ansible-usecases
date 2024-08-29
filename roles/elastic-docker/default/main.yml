@@ -1,0 +1,11 @@
+---
+# defaults file for elastic-docker
+elastic_role:
+  id: "default"
+  uid: "{{ project.uid }}"
+  gid: "{{ project.gid }}"
+  service_name: "elastic-default"
+  image: "docker.co/elasticsearch/elasticsearch:7.15.1"
+  yml_template: 'elasticsearch.yml'
+  conf_dir: "{{ project.base_path }}/elasticsearch/config"
+  log_dir: "{{ project.base_path }}/elasticsearch/log"

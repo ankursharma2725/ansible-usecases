@@ -1,0 +1,92 @@
+[Unit]
+Description=service file for {{ sc_name }}, image {{ pull.stdout}}
+#Disabling this as docker.service won't be identified by noon-root user
+#After=docker.service
+#Requires=docker.service
+{% if sc_requires_mount is defined %}
+RequiresMountsFor={{ sc_requires_mount }}
+{% endif %}
+
+[Service]
+StandardOutput=null
+TimeoutStartSec=0
+{% if sc_restart_on_failure %}
+Restart=on-failure
+RestartSec={{ sc_restart_seconds }}s
+# Note that StartLimit* options were moved from "Service" to "Unit" in systemd 229.
+# Both the old, and new location are accepted by systemd 229 and up, so using the old location
+# to make them work for either version of systemd.
+StartLimitInterval={{ sc_restart_seconds * (sc_restart_count + 1) }}
+StartLimitBurst={{ sc_restart_count }}
+{% endif %}
+ExecStartPre=-/usr/bin/docker rm -f {{ sc_name }}
+ExecStartPre=-/usr/bin/docker network disconnect -f bridge {{ sc_name }}
+ExecStartPre=-/usr/bin/docker pull {{ sc_image }}
+ExecStart=/usr/bin/docker run {% if sc_memory_limit != '' %}-m {{ sc_memory_limit }} {% endif %}--name {{ sc_name }} \
+{% if sc_user is defined %}
+    --user {{ sc_user }} \
+{% endif %}
+{% if sc_docker_network is defined %}
+    --network {{ sc_docker_network }} \
+{% endif %}
+{% if sc_docker_hostname is defined %}
+    --hostname {{ sc_docker_hostname }} \
+{% endif %}
+{% if sc_port_bindings is defined %}
+{% for port_binding in sc_port_bindings %}
+    -p {{ port_binding }} \
+{% endfor %}
+{% endif %}
+{% if sc_etchosts is defined %}
+{% for hostmapping in sc_etchosts %}
+    --add-host {{ hostmapping }} \
+{% endfor %}
+{% endif %}
+{% if sc_vols is defined %}
+{% for vol in sc_vols %}
+    -v {{ vol }} \
+{% endfor %}
+{% endif %}
+{% if sc_mount_binds is defined %}
+{% for mount in sc_mount_binds %}
+{% set mount_pair= mount.split(':') %}
+    --mount type=bind,src={{ mount_pair[0] }},dst={{ mount_pair[1] }} \
+{% endfor %}
+{% endif %}
+{% if sc_links is defined %}
+{% for link in sc_links %}
+    --link {{ link }} \
+{% endfor %}
+{% endif %}
+{% if sc_envs is defined %}
+{% for env in sc_envs %}
+    --env "{{ env }}" \
+{% endfor %}
+{% endif %}
+{% if sc_caps_add is defined %}
+{% for cap in sc_caps_add %}
+    --cap-add {{ cap }} \
+{% endfor %}
+{% endif %}
+{% if sc_caps_drop is defined %}
+{% for cap in sc_caps_drop %}
+    --cap-drop {{ cap }} \
+{% endfor %}
+{% endif %}
+{% if sc_labels is defined %}
+{% for label in sc_labels %}
+    -l {{ label }} \
+{% endfor %}
+{% endif %}
+{% if sc_health_cmd is defined %}
+    --health-cmd={{ sc_health_cmd }} \
+    --health-interval=60s \
+    --health-retries=5 \
+    --health-timeout=20s \
+{% endif %}
+    {{ sc_image }} {% if sc_cmd is defined %}{{ sc_cmd }}{% endif %}
+
+ExecStop=/usr/bin/docker stop {{ sc_name }}
+
+[Install]
+WantedBy=multi-user.target

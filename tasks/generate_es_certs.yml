@@ -1,0 +1,69 @@
+- name: Ensure directory exists
+  file:
+    path: "/tmp/escert"
+    state: directory
+    owner: "{{ project.uid }}"
+    group: "{{ project.gid }}"
+    mode: 0775
+
+
+- name: Create Elastic Certifcates 
+  shell: docker run --rm --user 1000:1000 -it -d -v /tmp/escert/:/tmp/escert/ {{ elastic.image_name }}:{{ elastic.image_tag }} ./bin/elasticsearch-certutil ca --out /tmp/escert/{{ elastic.cert }} -s --pass ""
+  register: result
+  retries: 3
+  delay: 1
+
+- name: Wait for 10 seconds to get generated certificates ready
+  pause:
+    seconds: 10
+
+- name: Change file ownership cert file
+  file:
+    path: /tmp/escert/{{ elastic.cert }}
+    owner: "{{ project.uid }}"
+    group: "{{ project.gid }}"
+    mode: 0775
+  retries: 3
+  delay: 1
+
+- name: Ensure directory exists
+  file:
+    path: "{{ item.conf_dir }}"
+    state: directory
+    owner: "{{ project.uid }}"
+    group: "{{ project.gid }}"
+    mode: 0775
+  with_items:
+    - "{{ elastic_config }}"
+
+- name: Copy Cert file
+  copy:
+    src: "/tmp/escert/{{ elastic.cert }}"
+    remote_src: yes
+    dest: "{{ item.conf_dir }}/{{ elastic.cert }}"
+    owner: "{{ project.uid }}"
+    group: "{{ project.gid }}"
+    mode: 0775
+  with_items:
+    - "{{ elastic_config }}"
+
+- name: Ensure directory exists
+  file:
+    path: "{{ project.base_path }}/elasticsearch/config/"
+    state: directory
+    recurse: yes
+    owner: "{{ project.uid }}"
+    group: "{{ project.gid }}"
+    mode: 0775
+
+- name: Create private key
+  shell: 'openssl pkcs12 -in {{ project.base_path }}/elasticsearch/config/elk.p12 -out {{ project.base_path }}/elasticsearch/config/private.key -nodes -nocerts -password pass:'
+  register: result
+  retries: 3
+  delay: 1
+
+- name: Create cert file
+  shell: 'openssl pkcs12 -in {{ project.base_path }}/elasticsearch/config/elk.p12 -out {{ project.base_path }}/elasticsearch/config/cert.crt -nodes -password pass:'
+  register: result
+  retries: 3
+  delay: 1

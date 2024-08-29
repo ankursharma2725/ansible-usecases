@@ -1,0 +1,81 @@
+---
+# tasks file for std_container
+- name: "pull image {{ sc_image }}"
+  shell: docker pull {{ sc_image }} | grep Digest
+  register: pull
+  changed_when: false
+
+- name: ensure user systemd directory is present
+  file:
+    path: "/home/{{ ansible_become_user }}/.config/systemd/user"
+    state: directory
+
+- name: "template service file for {{ sc_name }}"
+  template:
+    src: "{{ sc_service_template }}"
+    dest: "/home/{{ ansible_become_user }}/.config/systemd/user/{{ sc_name }}.service"
+  register: service_file
+  notify: restart sc
+
+# - name: "template service file for {{ sc_name }}"
+#   template:
+#     src: "{{ sc_service_template }}"
+#     dest: "/home/{{ ansible_user }}/.config/systemd/user/{{ sc_name }}.service"
+#     mode: 0755
+#     owner: "{{ ansible_user }}"
+#     group: "{{ ansible_user }}"
+#   register: service_file
+#   notify: restart sc
+
+# - name: reload systemd user configuration
+#   become_user: "{{ ansible_user }}"
+#   systemd:
+#     # name: "{{ sc_name }}"
+#     # state: restarted
+#     scope: "user"
+#     daemon_reload: yes
+#   when: service_file is changed
+
+# - name: flush handlers
+#   meta: flush_handlers
+
+- name: reload systemd
+  systemd:
+    name: "{{ sc_name }}"
+    state: restarted
+    scope: "user"
+    daemon_reload: yes
+  when: service_file is changed
+
+- name: flush handlers
+  meta: flush_handlers
+
+- name: "{{ sc_name }} service should be enabled and started"
+  # become_user: "{{ ansible_user }}"
+  systemd:
+    name: "{{ sc_name }}"
+    enabled: true
+    state: started
+    scope: "user"
+
+#- name: Get infos on container
+#  docker_container_info:
+#    name: "{{ sc_name }}"
+#  register: result
+#
+#- name: Does container exist?
+#  debug:
+#    msg: "The container {{ sc_name }} {{ 'exists' if result.exists else 'does not exist' }}"
+#
+#- name: Print information about container
+#  debug:
+#    var: result.container
+#  when: result.exists
+
+- name: check if container {{ sc_name }} is running
+  shell: docker ps --filter status=running --filter name="{{ sc_name }}"
+  retries: 20
+  delay: 10
+  register: result
+  changed_when: false
+  until: sc_name in result.stdout

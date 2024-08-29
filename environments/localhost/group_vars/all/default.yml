@@ -1,0 +1,306 @@
+########################
+###### General #########
+########################
+
+## traefik:
+dns_alias: "{{ ansible_all_ipv4_addresses[0] if ansible_all_ipv4_addresses[0] else 'localhost' }}"
+
+# Project
+project: 
+  name: "tutorials"
+  base_path: "/opt/projects/tutorials/new_poc"
+  uid: "1000"
+  gid: "1000"
+
+## Ansible
+ansible_become: yes
+ansible_become_user: main
+# ansible_password: "{{ password['ansible'] }}"
+ansible_become_method: sudo
+#ansible_become_pass: "{{ password['main'] }}"
+# //ansible_become_password: "main"
+# //ansible_password: "main"
+# ansible_sudo_pass: "main"
+# ansible_become_method: 'su'
+# ansible_become_exe: 'sudo -p "Password: " su -'
+
+########################
+#### Elasticsearch ##### 
+########################
+
+elastic_version: "8.0.0"
+
+## Vault
+vault:
+  host: "http://{{ dns_alias }}:8200"
+  api_key: "{{ token['vault_api_token'] }}"
+
+## Elastic
+elastic:
+  host : "https://{{ dns_alias }}:9200"
+  user : "elastic"
+  password : "{{ password['elastic'] }}"
+  # api_key: "{{ token['es_api_key'] }}"
+  image_name: "docker.elastic.co/elasticsearch/elasticsearch"
+  image_tag: "{{ elastic_version }}"
+  cert: elk.p12
+
+## Kibana
+kibana: 
+  host : "http://{{ dns_alias }}:5601"
+  user : "kibana_system"
+  password : "{{ password['elastic'] }}"
+  api_key: ""
+  image_name: "docker.elastic.co/kibana/kibana"
+  image_tag: "{{ elastic_version }}"
+
+## APM Server
+apm: 
+  host : "http://{{ dns_alias }}/playground/v1/apm/"
+  user : ""
+  password : ""
+  api_key: "{{ token['apm_api_key'] }}"
+  image_name: ""
+  image_tag: ""
+
+## APP Search Server
+app_search: 
+  host : "http://{{ dns_alias }}"
+  user : ""
+  password : ""
+  api_key: "{{ token['apm_api_key'] }}"
+  image_name: ""
+  image_tag: ""
+
+# Filebeat
+filebeat:
+  host : "{{ elastic.host }}"
+  user : "beats_system"
+  password : "{{ password['beats_system'] }}"
+  api_key: ""
+  image_name: "docker.elastic.co/beats/filebeat"
+  image_tag: "{{ elastic_version }}"
+
+ # Metricbeat
+metricbeat:
+  host : "{{ elastic.host }}"
+  user : "beats_system"
+  password : "{{ password['beats_system'] }}"
+  api_key: ""
+  image_name: "docker.elastic.co/beats/metricbeat"
+  image_tag: "{{ elastic_version }}"
+
+# Heartbeat
+heartbeat:
+  host : "{{ elastic.host }}"
+  user : "beats_system"
+  password : "{{ password['beats_system'] }}"
+  api_key: ""
+  image_name: "docker.elastic.co/beats/heartbeat"
+  image_tag: "{{ elastic_version }}"
+  index: ""
+# Auditbeat
+auditbeat:
+  host : "{{ elastic.host }}"
+  user : "beats_system"
+  password : "{{ password['beats_system'] }}"
+  api_key: ""
+  image_name: "docker.elastic.co/beats/auditbeat"
+  image_tag: "{{ elastic_version }}"
+  index: ""
+  
+# Fleet Server
+elastic_fleet:
+  host : "{{ elastic.host }}"
+  user : "beats_system"
+  password : "{{ password['beats_system'] }}"
+  api_key: ""
+  image_name: "docker.elastic.co/beats/elastic-agent"
+  image_tag: "{{ elastic_version }}"
+  index: ""
+  
+# Elastic Agent
+elastic_agent:
+  host : "{{ elastic.host }}"
+  user : "beats_system"
+  password : "{{ password['beats_system'] }}"
+  api_key: ""
+  image_name: "docker.elastic.co/beats/elastic-agent"
+  image_tag: "{{ elastic_version }}"
+  index: ""
+
+########################
+###### Monitoring ######
+########################
+
+
+## Grafana
+grafana: 
+  # host : "http://{{ dns_alias }}"
+  user : "admin"
+  password : "admin"
+  api_key: "{{ token['grafana_api_key'] }}"
+  image_name: "https://hub.docker.com/r/grafana/grafana"
+  image_tag: "grafanav"
+
+## prometheus
+prometheus: 
+  user : "admin"
+  password : ""
+  image_name: "https://hub.docker.com/r/prom/prometheus"
+  image_tag: "prometheus"
+
+
+########################
+### Data processing ####
+########################
+
+## Kafka
+kafka: 
+  host : "{{ dns_alias }}"
+  user : ""
+  password : ""
+  api_key: ""
+  image_name: "bitnami/kafka"
+  image_tag: "2.8.1"
+## Kafka
+zookeeper: 
+  host : "{{ dns_alias }}"
+  user : ""
+  password : ""
+  api_key: ""
+  image_name: "bitnami/zookeeper"
+  # image_tag: "2.8.1"
+
+# filebeat:
+#   host : "{{ elastic.host }}"
+#   user : "beats_system"
+#   password : "{{ password['beats_system'] }}"
+#   api_key: ""
+#   image_name: "docker.elastic.co/beats/filebeat"
+#   image_tag: "{{ elastic_version }}"
+## Kafka-ui
+
+########################
+#### Authentication ####
+########################
+
+## keycloak
+keycloak:
+  host : "http://{{ dns_alias }}/playground/v1/keycloak/auth"
+  user: "admin"
+  password: "{{ password['keycloak_admin'] }}"
+  api_key: "{{ token['keycloak_client_secret'] }}"
+  image_name: ""
+  image_tag: ""
+
+## traefik
+
+########################
+#### Configurator ######
+########################
+
+## Configurator
+configurator:
+  host : "https://{{ dns_alias }}:3005"
+  user : "deployment"
+  password : "{{ password['deployment'] }}"
+  api_key:
+  image_name: "registry.hub.docker.com/taskiy/tass-configurator-app"
+  image_tag: "latest"
+
+# Security
+security: 
+  hash_algorithm: "sha256"
+  encrypt_algorithm: "aes-256-cbc"
+  encrypt_salt: "{{ token['encrypt_salt'] }}"
+  UI_token: "{{ token['ui_token'] }}"
+
+
+########################
+#### Devops Tools ######
+########################
+
+## Docker
+docker: 
+  registry: "registry.hub.docker.com"
+  user: "taskiy"
+  password: "{{ password['docker_user'] }}"
+
+    
+# Jenkins
+jenkins:
+  host : ""
+  user : ""
+  password : "{{ password['jenkins'] }}"
+  api_key: ""
+  # image_name: "registry.hub.docker.com/taskiy/jenkins"
+  # image_tag: "1.2"
+  image_name: "registry.hub.docker.com/jenkins/jenkins"
+  image_tag: "2.347"
+
+
+# ## Testing
+# testing: 
+#   index : "tass-testing-v1"
+
+# elastic:
+#   host: "https://localhost:9200"
+#   user: "elastic"
+#   pass: "VFNyxcx7thzWwWq6o1Qf"
+
+# kibana:
+#   host: "http://localhost:5601"
+#   user: "elastic"
+#   pass: "VFNyxcx7thzWwWq6o1Qf"
+
+# targetelastic:
+#   host: "http://localhost:9400"
+#   user: "elastic"
+#   pass: "VFNyxcx7thzWwWq6o1Qf"
+
+# targetkibana:
+#   host: "http://localhost:5602"
+#   user: "elastic"
+#   pass: "VFNyxcx7thzWwWq6o1Qf"
+
+# project: 
+#   name: "tutorials"
+#   base_path: "/home/main/2022/projects"
+#   uid: "1000"
+#   gid: "1000"
+
+# shall:
+#   spaces: "export_spaces.sh.j2"
+#   path: "/home/main/projects/SUEL/migration/deploy-shell/roles/deploy_export_spaces/scripts/export_spaces.sh"
+
+# objects:
+#   spaces: "export_all_objects.j2"
+#   path: /home/main/projects/SUEL/migration/deploy-shell/roles/deploy_export_spaces/scripts/export_all_objects.sh
+
+# objects_by_type:
+#   spaces: "export_objects_by_type.j2"
+#   path: /home/main/projects/SUEL/migration/deploy-shell/roles/deploy_export_spaces/scripts/export_objects_by_type.sh
+
+# export_user_role:
+#   spaces: "export_user_roles.j2"
+#   path: /home/main/projects/SUEL/migration/deploy-shell/roles/deploy_export_spaces/scripts/export_user_roles.sh
+
+
+# logstash:
+#   spaces: "export_logstash_pipelines.j2"
+#   path: /home/main/projects/SUEL/migration/deploy-shell/roles/deploy_export_spaces/scripts/export_logstash_pipelines.sh
+
+
+# import_objects:
+#   spaces: "import_all_objects.j2"
+#   path: /home/main/projects/SUEL/migration/deploy-shell/roles/deploy_export_spaces/scripts/import_all_objects.sh
+
+# import_by_type:
+#   spaces: "import_objects_by_type.j2"
+#   path: /home/main/projects/SUEL/migration/deploy-shell/roles/deploy_export_spaces/scripts/import_objects_by_type.sh
+  
+   
+# import:
+#   spaces: "import_spaces.j2"
+#   path: /home/main/projects/SUEL/migration/deploy-shell/roles/deploy_export_spaces/scripts/import_spaces.sh
