@@ -1,0 +1,88 @@
+pipeline {
+  agent any
+  // agent {
+  //   label 'local-ubuntu-vm'
+  // }
+  options {
+    ansiColor('xterm')
+    timestamps ()
+    buildDiscarder(logRotator(daysToKeepStr: '365'))
+  }
+  parameters {
+    choice(
+      name: 'component_name',
+      choices: [
+        'elastic',
+        'elastic1',
+        'kibana',
+        'kibana1',
+        'logstash-ingester',
+        'logstash-forworder',
+        'configurator',
+        'kafka',
+        'kafka-ui',
+        'promethues',
+        'grafana',
+        'heartbeat',
+        'metricbeat',
+        'promethues-exporter',
+        'traefik'
+      ],
+      description: 'Component to deploy.'
+    )
+    gitParameter (
+      name: 'deplrepo_revision',
+      description: 'deployment repository branch',
+      branchFilter: 'origin/.+',
+      defaultValue: 'origin/main',
+      type: 'PT_BRANCH',
+      quickFilterEnabled: false, selectedValue: 'NONE', sortMode: 'ASCENDING', tagFilter: '*',
+      listSize: '0'
+    )
+  }
+  environment {
+    GIT_CREDENTIAL_ID = 'GIT-access-token2'
+  }
+  stages {
+    stage('Checkout repositories') {
+      steps {
+        // checkout deployment repo
+        checkout([
+          $class: 'GitSCM',
+          branches: [[name: "${params.deplrepo_revision}"]],
+          extensions: [
+            [$class: 'CleanBeforeCheckout', deleteUntrackedNestedRepositories: true],
+            [$class: 'CloneOption', noTags: false]
+          ],
+          userRemoteConfigs: [[
+            credentialsId: env.GIT_CREDENTIAL_ID,
+            url: 'https://github.com/ankursharma2725/ansible-role-filebeat.git'
+          ]]
+        ])
+        script {commitId = sh(returnStdout: true, script: 'git rev-parse --short HEAD')}
+      }
+    }
+    stage('Deploy -> Run Specific Playbook') {
+      steps {
+        script {
+
+          currentBuild.displayName = env.BUILD_NUMBER + "-" + params.component_name
+          component = params.component_name
+          sh "./run.sh '${component}'"
+        }
+      }
+    }
+  }
+  post {
+    success {
+      script {
+        sh "echo 'Jenkins ${JOB_BASE_NAME}' '#${BUILD_DISPLAY_NAME} Successful: <${BUILD_URL}|Open>'"
+      }
+    }
+    failure {
+      script {
+        sh "echo 'Jenkins ${JOB_BASE_NAME}' '#${BUILD_DISPLAY_NAME} Failed: <${env.BUILD_URL}|Open>'"
+      }
+    }
+  }
+}

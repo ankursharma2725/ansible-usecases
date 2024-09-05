@@ -19,7 +19,7 @@ fi
 
 case "$COMPONENT" in
 elastic)
-    ansible-playbook -i environments/localhost/ deploy-elastic.yml --connection=local -vvv
+    ansible-playbook -i environments/localhost/ deploy-elastic.yml --connection=local -v
     ;;
 kibana)
     ansible-playbook -i environments/localhost/ --vault-password-file=~/.secrets/tass-ansible-vault deploy-kibana.yml --connection=local
