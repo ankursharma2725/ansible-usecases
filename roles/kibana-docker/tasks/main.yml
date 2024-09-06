@@ -1,0 +1,60 @@
+---
+# tasks file for kibana-docker
+
+- name: ensure directories are present
+  file:
+    path: "{{ kibana_role.conf_dir }}"
+    state: directory
+    owner: "{{ kibana_role.uid }}"
+    group: "{{ kibana_role.gid }}"
+    mode: 0750
+
+- name: template kibana.yml
+  template:
+    src:    '{{ kibana_role.yml_template }}'
+    dest:   '{{ kibana_role.conf_dir }}/kibana.yml'
+    owner: "{{ kibana_role.uid }}"
+    group: "{{ kibana_role.gid }}"
+    mode:   0770
+    force:  yes
+
+- name: "create and start {{ kibana_role.service_name }} service"
+  include_role:
+    name: std_container
+  vars:
+    sc_name: "{{ kibana_role.service_name }}"
+    sc_docker_hostname: "tutorials-kibana" 
+    sc_image: "{{ kibana_role.image }}"
+    sc_vols:
+      - "{{ kibana_role.conf_dir }}:/usr/share/kibana/config/"
+    # sc_labels: "{{ kibana_role.labels|default([]) }}"
+    sc_port_bindings:
+      - '{{ kibana_role.port }}:5601'
+    sc_labels:
+      - 'traefik.enable=true'
+      # - 'traefik.port=5601'
+      # - 'traefik.frontend.entryPoints=http,https'
+      # - 'traefik.frontend.redirect.entryPoint=https'
+      # - '"traefik.http.routers.kibana.rule=Host:tutorials-kibana.localhost;PathPrefix:/kibana"'
+      - '"traefik.frontend.rule=Host(`tutorials-kibana.localhost`)"'
+      # - '"traefik.frontend.rule=Host:tutorials-kibana;PathPrefix:/kibana"'
+      # - "traefik.http.services.kibana.loadbalancer.server.port=5601"
+      # - "traefik.http.services.tutorials-elastic.loadbalancer.server.scheme=http"
+
+- name: restart after kibana.yml has changed
+  systemd:
+    state: restarted
+    name: "{{ kibana_role.service_name }}"
+    scope: "user"
+
+# - name: "wait for Kibana to get ready"
+#   uri:
+#     url: "{{ kibana.host }}/api/status"
+#     method: GET
+#     status_code: [ 200 ]
+#     user: '{{ kibana.user }}'
+#     password: '{{ kibana.password }}'
+#   register: result
+#   until: result.status == 200
+#   retries: 10
+#   delay: 10

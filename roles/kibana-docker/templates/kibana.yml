@@ -1,0 +1,13 @@
+server.name: "{{ kibana_role.service_name }}"
+# server.host: "{{ vagrant.host }}"
+server.host: "{{ kibana_role.service_name }}"
+# server.basePath: /tass/kibana
+# elasticsearch.hosts: "https://{{ project.name }}-elastic:9200"
+elasticsearch.hosts: "{{ kibana_role.elastic_host }}"
+elasticsearch.ssl.verificationMode: none
+elasticsearch.username: "{{ kibana.user }}"
+elasticsearch.password: "{{ kibana.password }}"
+elasticsearch.requestHeadersWhitelist: ["securitytenant","Authorization"]
+server.ssl.enabled: false
+xpack.security.encryptionKey: "KDp4CKncxAjLZmzoZctfpHPWDRcuinYs"
+xpack.reporting.encryptionKey: "OqPriOsIwqSLLW5zegc1uoLjagchHhBi"

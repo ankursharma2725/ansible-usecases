@@ -1,0 +1,21 @@
+---
+# handlers file for kibana-docker
+- name: restart kibana
+  systemd:
+    name: '{{ kibana_role.service_name }}.service'
+    state: restarted
+    scope: "user"
+  notify: get container ip
+
+- name: get container ip
+  shell: "docker inspect -f  {% raw %} '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}'  {% endraw %} kibana-{{ kibana_role.id }}"
+  register: container_ip
+  notify: wait until kibana is started
+
+- name: wait until kibana is started
+  wait_for:
+    host: '{{ container_ip.stdout }}'
+    port: '5601'
+    state: started
+    delay: 5
+    timeout: 2100   #2100s=35 Minutes

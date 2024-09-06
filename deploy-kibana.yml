@@ -1,0 +1,33 @@
+- name: kibana
+  hosts: "localhost"
+  gather_facts: true
+  pre_tasks:
+  - name: Create Kibana System User
+    uri:
+      url: "{{ kibana_role.elastic_host }}/_security/user/kibana_system/_password?pretty"
+      method: POST
+      body_format: json
+      status_code: [ 200 ]
+      user: '{{ elastic.user }}'
+      password: '{{ elastic.password }}'
+      force_basic_auth: yes
+      validate_certs: false
+      body: '{"password" : "{{ kibana.password }}"}'
+    retries: 5
+    delay: 5
+  vars:
+    sc_docker_network: "elastic"
+    kibana_role:
+      id: "{{ project.name }}"
+      uid: "{{ project.uid }}"
+      gid: "{{ project.gid }}"
+      service_name: "{{ project.name }}-kibana"
+      image: "{{ kibana.image_name }}:{{ kibana.image_tag }}"
+      yml_template: "kibana.yml"
+      conf_dir: "{{ project.base_path }}/kibana/config"
+      port: "5601"
+      elastic_host: "https://{{ vagrant.ip4 }}:9200"
+  vars_files:
+    - "vaults/default.yml"
+  roles:
+    - kibana-docker

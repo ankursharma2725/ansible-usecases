@@ -1,0 +1,12 @@
+---
+# defaults file for kibana-docker
+kibana_role:
+  id: "default"
+  uid: '1000'
+  gid: '1000'
+  service_name: "kibana-default"
+  image: "docker.elastic.co/kibana/kibana:7.15.1"
+  yml_template: 'kibana.yml'
+  conf_dir: "{{ project.base_path }}/kibana/config"
+  data_dir: "{{ project.base_path }}/kibana/data"
+  log_dir: "{{ project.base_path }}/kibana/log"
